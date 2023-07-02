@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>PNG to BIN Converter</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+</head>
+<body>
+  <input type="file" id="fileInput" accept=".png" multiple>
+  <button onclick="convertPNGsToBIN()">Convert</button>
+
+  <script>
+    function convertPNGsToBIN() {
+      var fileInput = document.getElementById('fileInput');
+      var files = fileInput.files;
+
+      for (var i = 0; i < files.length; i++) {
+        var file = files[i];
+        var reader = new FileReader();
+
+        reader.onload = (function(file) {
+          return function(e) {
+            var img = new Image();
+            img.onload = function() {
+              var canvas = document.createElement('canvas');
+              canvas.width = img.width;
+              canvas.height = img.height;
+
+              var ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0);
+              var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+
+              var binData = new Uint8Array(imageData.length/4*3); // Each pixel has 3 values (R, G, B)
+
+              for (var j = 0; j < imageData.length; j += 3) {
+                var r = imageData[j];
+                var g = imageData[j + 1];
+                var b = imageData[j + 2];
+
+                // Write RGB values to binData as individual bytes
+                binData[j] = r;
+                binData[j + 1] = g;
+                binData[j + 2] = b;
+              }
+
+              // Create a Blob from the binData
+              var blob = new Blob([binData], { type: 'application/octet-stream' });
+
+              // Create a temporary download link and trigger the download
+              var downloadLink = document.createElement('a');
+              downloadLink.href = window.URL.createObjectURL(blob);
+              downloadLink.download = file.name.replace('.png', '.bin');
+              downloadLink.click();
+            };
+
+            img.src = e.target.result;
+          };
+        })(file);
+
+        reader.readAsDataURL(file);
+      }
+    }
+  </script>
+</body>
+</html>
